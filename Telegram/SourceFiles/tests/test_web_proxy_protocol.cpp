@@ -179,6 +179,7 @@ using Test::NamedChecks::Check;
 [[nodiscard]] ProxyData PathProxy() {
 	auto proxy = ProxyData();
 	proxy.type = ProxyData::Type::Web;
+	proxy.port = 443;
 	proxy.setWebAddress(u" HTTPS://Proxy.Example.COM/dobry-cola-super-app/ "_q);
 	proxy.password = u"000102030405060708090a0b0c0d0e0f"_q;
 	return proxy;
