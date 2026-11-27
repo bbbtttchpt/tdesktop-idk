@@ -12,6 +12,8 @@ if (DESKTOP_APP_TEST_APPS)
     PRIVATE
         mtproto/web_proxy/web_proxy_frame.cpp
         mtproto/web_proxy/web_proxy_frame.h
+        mtproto/mtproto_proxy_data.cpp
+        mtproto/mtproto_proxy_data.h
         tests/test_named_checks.hpp
         tests/test_web_proxy_protocol.cpp
     )
