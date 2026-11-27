@@ -7,6 +7,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "mtproto/web_proxy/web_proxy_frame.h"
 
+#include <cstring>
+
+#include <iterator>
+
 namespace MTP::WebProxy {
 namespace {
 
@@ -56,6 +60,7 @@ QByteArray SerializeFrame(
 
 bool ParseFrames(QByteArray &buffer, std::vector<Frame> &output) {
 	auto offset = 0;
+	auto parsed = std::vector<Frame>();
 	while (buffer.size() - offset >= kFrameHeaderSize) {
 		const auto data = reinterpret_cast<const uchar*>(buffer.constData() + offset);
 		if (!IsKnownType(data[0])) {
@@ -75,10 +80,10 @@ bool ParseFrames(QByteArray &buffer, std::vector<Frame> &output) {
 		if (buffer.size() - offset < full) {
 			break;
 		}
-		if (output.size() >= std::size_t(kMaxBatchFrames)) {
+		if (output.size() + parsed.size() >= std::size_t(kMaxBatchFrames)) {
 			return false;
 		}
-		output.push_back({
+		parsed.push_back({
 			FrameType(data[0]),
 			streamId,
 			buffer.mid(offset + kFrameHeaderSize, size),
@@ -87,7 +92,20 @@ bool ParseFrames(QByteArray &buffer, std::vector<Frame> &output) {
 	}
 	if (offset > 0) {
 		buffer.remove(0, offset);
+		output.insert(
+			end(output),
+			std::make_move_iterator(begin(parsed)),
+			std::make_move_iterator(end(parsed)));
 	}
+	return true;
+}
+
+bool ApplyWindowCredit(uint32 &window, uint32 amount) {
+	const auto maximum = uint32(kInitialStreamWindow);
+	if (!amount || window > maximum || amount > maximum - window) {
+		return false;
+	}
+	window += amount;
 	return true;
 }
 

@@ -16,6 +16,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtCore/QUrlQuery>
 #include <QtNetwork/QHostAddress>
 
+#include <algorithm>
+
 namespace MTP {
 namespace {
 

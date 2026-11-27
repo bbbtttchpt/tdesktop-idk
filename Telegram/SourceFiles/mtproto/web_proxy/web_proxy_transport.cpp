@@ -250,7 +250,7 @@ private:
 		Fn<void(QByteArray)> data;
 		Fn<void()> disconnected;
 		Fn<void()> failed;
-		uint64 sendWindow = kInitialStreamWindow;
+		uint32 sendWindow = kInitialStreamWindow;
 		uint32 receiveWindow = kInitialStreamWindow;
 		uint32 pendingWindow = 0;
 		int pendingBytes = 0;
@@ -1057,9 +1057,9 @@ bool Transport::Private::processRelayFrame(const Frame &frame) {
 		if (!amount) {
 			return false;
 		}
-		stream.sendWindow = std::min<uint64>(
-			stream.sendWindow + amount,
-			uint64(std::numeric_limits<uint32>::max()));
+		if (!ApplyWindowCredit(stream.sendWindow, amount)) {
+			return false;
+		}
 		markStreamReady(frame.streamId);
 		flushStreams();
 		return true;
@@ -1156,11 +1156,10 @@ void Transport::Private::grantWindow(uint32 streamId, uint32 amount) {
 		return;
 	}
 	auto &stream = i->second;
-	if (amount > kInitialStreamWindow - stream.receiveWindow) {
+	if (!ApplyWindowCredit(stream.receiveWindow, amount)) {
 		protocolError();
 		return;
 	}
-	stream.receiveWindow += amount;
 	stream.pendingWindow += amount;
 	if (stream.pendingWindow >= kWindowFlushBytes) {
 		const auto pending = base::take(stream.pendingWindow);

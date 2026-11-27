@@ -47,5 +47,6 @@ struct Frame {
 [[nodiscard]] bool ParseFrames(
 	QByteArray &buffer,
 	std::vector<Frame> &output);
+[[nodiscard]] bool ApplyWindowCredit(uint32 &window, uint32 amount);
 
 } // namespace MTP::WebProxy
