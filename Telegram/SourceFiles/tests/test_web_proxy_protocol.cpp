@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "mtproto/web_proxy/web_proxy_frame.h"
+#include "mtproto/mtproto_proxy_data.h"
 
 #include "tests/test_named_checks.hpp"
 
@@ -19,9 +20,15 @@ using MTP::WebProxy::FrameType;
 using MTP::WebProxy::kFrameHeaderSize;
 using MTP::WebProxy::kInitialStreamWindow;
 using MTP::WebProxy::kMaxBatchFrames;
-using MTP::WebProxy::kMaxFramePayload;
 using MTP::WebProxy::ParseFrames;
 using MTP::WebProxy::SerializeFrame;
+using MTP::DecodeWebProxyLinkSecret;
+using MTP::EncodeWebProxyLinkSecret;
+using MTP::NormalizeWebProxyHost;
+using MTP::ProxyData;
+using MTP::WebProxyBridgeCapability;
+using MTP::WebProxyBridgePath;
+using MTP::WebProxyBridgeUrl;
 using Test::NamedChecks::Check;
 
 [[nodiscard]] QString CheckSerializedFrame() {
@@ -157,6 +164,63 @@ using Test::NamedChecks::Check;
 	return QString();
 }
 
+[[nodiscard]] QString CheckWebProxyHostNormalization() {
+	return (NormalizeWebProxyHost(u" Proxy.Example.COM "_q)
+			== u"proxy.example.com"_q
+		&& NormalizeWebProxyHost(u"bücher.example"_q)
+			== u"xn--bcher-kva.example"_q
+		&& NormalizeWebProxyHost(u"127.1"_q).isEmpty()
+		&& NormalizeWebProxyHost(u"localhost"_q).isEmpty()
+		&& NormalizeWebProxyHost(u"site.example:443"_q).isEmpty())
+		? QString()
+		: u"WEB proxy host canonicalization accepted an invalid host"_q;
+}
+
+[[nodiscard]] ProxyData PathProxy() {
+	auto proxy = ProxyData();
+	proxy.type = ProxyData::Type::Web;
+	proxy.setWebAddress(u" HTTPS://Proxy.Example.COM/dobry-cola-super-app/ "_q);
+	proxy.password = u"000102030405060708090a0b0c0d0e0f"_q;
+	return proxy;
+}
+
+[[nodiscard]] QString CheckWebProxyAddressAndCapability() {
+	const auto proxy = PathProxy();
+	return (proxy.valid()
+		&& proxy.webAddress() == u"proxy.example.com/dobry-cola-super-app"_q
+		&& WebProxyBridgePath(proxy) == u"/dobry-cola-super-app/"_q
+		&& WebProxyBridgeCapability(proxy)
+			== u"hHz99Xs93EN1j91G9gpNepXwGNNt5YdAFkEVk_LlqdQ"_q
+		&& WebProxyBridgeUrl(proxy).startsWith(
+			u"https://proxy.example.com/dobry-cola-super-app/?bridge="_q))
+		? QString()
+		: u"WEB proxy address or host/path-bound capability changed"_q;
+}
+
+[[nodiscard]] QString CheckWebProxyLinkSecretMarker() {
+	const auto proxy = PathProxy();
+	const auto encoded = EncodeWebProxyLinkSecret(proxy);
+	const auto expected = QString::fromLatin1(QByteArray::fromHex(
+		"70000102030405060708090a0b0c0d0e0f").toBase64(
+			QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals));
+	return (encoded == expected
+		&& DecodeWebProxyLinkSecret(encoded, true) == proxy.password
+		&& DecodeWebProxyLinkSecret(proxy.password, false) == proxy.password
+		&& DecodeWebProxyLinkSecret(proxy.password, true).isEmpty())
+		? QString()
+		: u"WEB proxy path-aware link secret encoding changed"_q;
+}
+
+[[nodiscard]] QString CheckWebProxyInvalidPaths() {
+	auto proxy = PathProxy();
+	proxy.setWebAddress(u"proxy.example.com/valid//invalid"_q);
+	return (!proxy.valid()
+		&& proxy.host.isEmpty()
+		&& proxy.user.isEmpty())
+		? QString()
+		: u"WEB proxy accepted a path containing an empty segment"_q;
+}
+
 [[nodiscard]] std::vector<Check> Checks() {
 	return {
 		{ "frame.serialize-wire-format", CheckSerializedFrame },
@@ -166,6 +230,10 @@ using Test::NamedChecks::Check;
 		{ "frame.maximum-payload", CheckOversizedFrameIsRejected },
 		{ "frame.maximum-batch", CheckBatchLimit },
 		{ "flow-control.window-credit-boundaries", CheckWindowCreditBoundaries },
+		{ "web-proxy.host-normalization", CheckWebProxyHostNormalization },
+		{ "web-proxy.address-and-capability", CheckWebProxyAddressAndCapability },
+		{ "web-proxy.link-secret-marker", CheckWebProxyLinkSecretMarker },
+		{ "web-proxy.invalid-paths", CheckWebProxyInvalidPaths },
 	};
 }
 
