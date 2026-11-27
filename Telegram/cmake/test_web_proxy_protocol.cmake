@@ -4,7 +4,7 @@
 # For license and copyright information please follow this link:
 # https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
-if (DESKTOP_APP_TEST_APPS)
+if (DESKTOP_APP_TEST_APPS OR TDESKTOP_BUILD_WEB_PROXY_TESTS)
     add_executable(test_web_proxy_protocol)
     init_target(test_web_proxy_protocol "(tests)")
 
