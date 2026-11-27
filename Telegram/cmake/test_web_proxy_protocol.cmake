@@ -8,8 +8,6 @@ if (DESKTOP_APP_TEST_APPS)
     add_executable(test_web_proxy_protocol)
     init_target(test_web_proxy_protocol "(tests)")
 
-    target_precompile_headers(test_web_proxy_protocol PRIVATE ${src_loc}/stdafx.h)
-
     nice_target_sources(test_web_proxy_protocol ${src_loc}
     PRIVATE
         mtproto/web_proxy/web_proxy_frame.cpp
