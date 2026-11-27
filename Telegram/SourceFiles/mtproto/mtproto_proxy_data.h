@@ -11,6 +11,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include <QtNetwork/QNetworkProxy>
 
+#include <vector>
+
 namespace MTP {
 
 struct ProxyData {
