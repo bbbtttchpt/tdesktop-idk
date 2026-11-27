@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "mtproto/web_proxy/web_proxy_frame.h"
 
+#include <cstring>
+
 #include <iterator>
 
 namespace MTP::WebProxy {
