@@ -161,7 +161,18 @@ jobs:
           -D TDESKTOP_API_TEST=ON \
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=OFF \
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF \
+          -D TDESKTOP_BUILD_WEB_PROXY_TESTS=ON \
           $DEFINE
+
+      - name: WEB proxy protocol tests.
+        if: env.ONLY_CACHE == 'false'
+        run: |
+          docker run --rm \
+          -u $(id -u) \
+          -v $PWD:/usr/src/tdesktop \
+          -v ${{ env.CCACHE_DIR }}:/var/cache/ccache \
+          $IMAGE_TAG \
+          bash -lc 'cd /usr/src/tdesktop && cmake --build out --config Debug --target test_web_proxy_protocol && out/test_web_proxy_protocol/test_web_proxy_protocol'
 
       - name: Count ccache misses.
         id: ccache-stats
